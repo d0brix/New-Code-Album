@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Тёмный Силуэт — Новый Код (Album Player)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --bg: #f5f5f5;
+      --bg-alt: #ffffff;
+      --fg: #111111;
+      --muted: #666666;
+      --accent: #111111;
+      --border: #dddddd;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+    }
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 18px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      background: #fafafa;
+    }
+    header .title {
+      font-size: 1.4rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    header .subtitle {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+    }
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+      gap: 32px;
+      padding: 24px 32px 32px;
+    }
+    .left {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .cover-card {
+      background: var(--bg-alt);
+      border-radius: 18px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.06);
+    }
+    .cover {
+      width: 100%;
+      border-radius: 14px;
+      display: block;
+    }
+    .album-meta {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .album-meta strong {
+      color: var(--fg);
+      font-weight: 600;
+    }
+    .tracklist-card {
+      background: var(--bg-alt);
+      border-radius: 18px;
+      padding: 12px 12px 4px;
+      border: 1px solid var(--border);
+    }
+    .tracklist-header {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      padding: 0 4px 8px;
+    }
+    .track-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+    .track-item {
+      display: flex;
+      align-items: center;
+      padding: 6px 6px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
+      gap: 10px;
+    }
+    .track-item:hover {
+      background: #f0f0f0;
+      transform: translateY(-1px);
+    }
+    .track-item.active {
+      background: #111111;
+      color: #ffffff;
+    }
+    .track-number {
+      font-size: 0.8rem;
+      width: 1.5rem;
+      text-align: right;
+      opacity: 0.6;
+    }
+    .track-meta {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .track-title {
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .track-info-line {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    .track-item.active .track-info-line {
+      color: rgba(255,255,255,0.8);
+    }
+    .duration-pill {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid #cccccc;
+    }
+    .track-item.active .duration-pill {
+      border-color: rgba(255,255,255,0.5);
+    }
+
+    .right {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      min-width: 0;
+    }
+    .player-card {
+      background: var(--bg-alt);
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      padding: 16px 18px 12px;
+      box-shadow: 0 16px 30px rgba(0,0,0,0.05);
+    }
+    .player-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .now-playing-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+    }
+    .now-playing-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+    .now-playing-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .player-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: right;
+    }
+    audio {
+      width: 100%;
+      margin-top: 8px;
+    }
+    .player-hint {
+      margin-top: 6px;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .lyrics-card {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr;
+      min-height: 0;
+    }
+    .lyrics-panel {
+      background: var(--bg-alt);
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .lyrics-header {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .lyrics-body {
+      flex: 1;
+      overflow-y: auto;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 960px) {
+      main {
+        grid-template-columns: 1fr;
+        padding: 20px;
+      }
+    }
+    @media (max-width: 640px) {
+      header {
+        padding: 14px 16px;
+        flex-direction: column;
+        gap: 4px;
+      }
+      main {
+        padding: 14px 16px 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div>
+      <div class="subtitle">Тёмный Силуэт · Альбом</div>
+      <div class="title">Новый код</div>
+    </div>
+    <div class="subtitle">Слушай · Чети</div>
+  </header>
+
+  <main>
+    <section class="left">
+      <article class="cover-card">
+        <img
+          class="cover"
+          src="https://github.com/d0brix/New-Code-Album/blob/main/%D0%9D%D0%9A.png?raw=true"
+          alt="Новый Код — обложка альбома"
+        />
+        <div class="album-meta">
+          <div><strong>НОВЫЙ КОД</strong><br><span>Post–Soviet alt / trap</span></div>
+          <div>10 треков<br><span>Тёмный Силуэт</span></div>
+        </div>
+      </article>
+
+      <article class="tracklist-card">
+        <div class="tracklist-header">Траклист</div>
+        <ul class="track-list" id="trackList"></ul>
+      </article>
+    </section>
+
+    <section class="right">
+      <article class="player-card">
+        <div class="player-top">
+          <div>
+            <div class="now-playing-label">Сега звучи</div>
+            <div class="now-playing-title" id="nowPlayingTitle">—</div>
+            <div class="now-playing-sub" id="nowPlayingSub">Избери трак отляво.</div>
+          </div>
+          <div class="player-meta" id="playerMeta">
+            MP3 · 320 kbps<br/>
+            Албумът се стриймва директно от GitHub.
+          </div>
+        </div>
+        <audio id="audioPlayer" controls></audio>
+        <div class="player-hint">
+          След като трекът свърши, автоматично се пуска следващият. В края на албума плеърът спира.
+        </div>
+      </article>
+
+      <section class="lyrics-card">
+        <article class="lyrics-panel">
+          <div class="lyrics-header">
+            <span>Текст (руски)</span>
+            <span id="lyricsRuSource" style="opacity:0.7;font-size:0.7rem;"></span>
+          </div>
+          <div class="lyrics-body" id="lyricsRu">
+            Избери песен, за да видиш оригиналния текст (зарежда се от .txt файла в GitHub).
+          </div>
+        </article>
+      </section>
+    </section>
+  </main>
+</div>
+
+<script>
+  const tracks = [
+    {
+      id: 1,
+      number: "01",
+      title: "Нулевая ночь",
+      duration: "4:09",
+      audioUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/01%20-%20%D0%A2%D1%91%D0%BC%D0%BD%D1%8B%D0%B9%20%D0%A1%D0%B8%D0%BB%D1%83%D1%8D%D1%82%20-%20%D0%9D%D0%A3%D0%9B%D0%95%D0%92%D0%90%D0%AF%20%D0%9D%D0%9E%D0%A7%D0%AC.mp3",
+      lyricsRuUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/1.%20%D0%9D%D0%A3%D0%9B%D0%95%D0%92%D0%90%D0%AF%20%D0%9D%D0%9E%D0%A7%D0%AC.txt"
+    },
+    {
+      id: 2,
+      number: "02",
+      title: "Первый день",
+      duration: "3:52",
+      audioUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/02%20-%20%D0%A2%D1%91%D0%BC%D0%BD%D1%8B%D0%B9%20%D0%A1%D0%B8%D0%BB%D1%83%D1%8D%D1%82%20-%20%D0%9F%D0%95%D0%A0%D0%92%D0%AB%D0%99%20%D0%94%D0%95%D0%9D%D0%AC.mp3",
+      lyricsRuUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/2.%20%D0%9F%D0%95%D0%A0%D0%92%D0%AB%D0%99%20%D0%94%D0%95%D0%9D%D0%AC.txt"
+    },
+    {
+      id: 3,
+      number: "03",
+      title: "Улица говорит",
+      duration: "3:45",
+      audioUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/03%20-%20%D0%A2%D1%91%D0%BC%D0%BD%D1%8B%D0%B9%20%D0%A1%D0%B8%D0%BB%D1%83%D1%8D%D1%82%20-%20%D0%A3%D0%9B%D0%98%D0%A6%D0%90%20%D0%93%D0%9E%D0%92%D0%9E%D0%A0%D0%98%D0%A2.mp3",
+      lyricsRuUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/3.%20%D0%A3%D0%9B%D0%98%D0%A6%D0%90%20%D0%93%D0%9E%D0%92%D0%9E%D0%A0%D0%98%D0%A2.txt"
+    },
+    {
+      id: 4,
+      number: "04",
+      title: "Красная нить",
+      duration: "4:01",
+      audioUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/04%20-%20%D0%A2%D1%91%D0%BC%D0%BD%D1%8B%D0%B9%20%D0%A1%D0%B8%D0%BB%D1%83%D1%8D%D1%82%20-%20%D0%9A%D0%A0%D0%90%D0%A1%D0%9D%D0%90%D0%AF%20%D0%9D%D0%98%D0%A2%D0%AC.mp3",
+      lyricsRuUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/4.%20%D0%9A%D0%A0%D0%90%D0%A1%D0%9D%D0%90%D0%AF%20%D0%9D%D0%98%D0%A2%D0%AC.txt"
+    },
+    {
+      id: 5,
+      number: "05",
+      title: "По линии отца",
+      duration: "4:18",
+      audioUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/05%20-%20%D0%A2%D1%91%D0%BC%D0%BD%D1%8B%D0%B9%20%D0%A1%D0%B8%D0%BB%D1%83%D1%8D%D1%82%20-%20%D0%9F%D0%9E%20%D0%9B%D0%98%D0%9D%D0%98%D0%98%20%D0%9E%D0%A2%D0%A6%D0%90.mp3",
+      lyricsRuUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/5.%20%D0%9F%D0%9E%20%D0%9B%D0%98%D0%9D%D0%98%D0%98%20%D0%9E%D0%A2%D0%A6%D0%90.txt"
+    },
+    {
+      id: 6,
+      number: "06",
+      title: "Холод",
+      duration: "3:57",
+      audioUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/06%20-%20%D0%A2%D1%91%D0%BC%D0%BD%D1%8B%D0%B9%20%D0%A1%D0%B8%D0%BB%D1%83%D1%8D%D1%82%20-%20%D0%A5%D0%9E%D0%9B%D0%9E%D0%94.mp3",
+      lyricsRuUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/6.%20%D0%A5%D0%9E%D0%9B%D0%9E%D0%94.txt"
+    },
+    {
+      id: 7,
+      number: "07",
+      title: "Кухня молчит",
+      duration: "4:06",
+      audioUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/07%20-%20%D0%A2%D1%91%D0%BC%D0%BD%D1%8B%D0%B9%20%D0%A1%D0%B8%D0%9B%D0%A3%D0%AD%D0%A2%20-%20%D0%9A%D0%A3%D0%A5%D0%9D%D0%AF%20%D0%9C%D0%9E%D0%9B%D0%A7%D0%98%D0%A2.mp3",
+      lyricsRuUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/7.%20%D0%9A%D0%A3%D0%A5%D0%9D%D0%AF%20%D0%9C%D0%9E%D0%9B%D0%A7%D0%98%D0%A2.txt"
+    },
+    {
+      id: 8,
+      number: "08",
+      title: "В воздухе",
+      duration: "3:49",
+      audioUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/08%20-%20%D0%A2%D1%91%D0%BC%D0%BD%D1%8B%D0%B9%20%D0%A1%D0%98%D0%9B%D0%A3%D0%AD%D0%A2%20-%20%D0%92%20%D0%92%D0%9E%D0%97%D0%94%D0%A3%D0%A5%D0%95.mp3",
+      lyricsRuUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/8.%20%D0%92%20%D0%92%D0%9E%D0%97%D0%94%D0%A3%D0%A5%D0%95.txt"
+    },
+    {
+      id: 9,
+      number: "09",
+      title: "Гетто в голове",
+      duration: "4:02",
+      audioUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/09%20-%20%D0%A2%D1%91%D0%BC%D0%BD%D1%8B%D0%B9%20%D0%A1%D0%98%D0%9B%D0%A3%D0%AD%D0%A2%20-%20%D0%93%D0%95%D0%A2%D0%A2%D0%9E%20%D0%92%20%D0%93%D0%9E%D0%9B%D0%9E%D0%92%D0%95.mp3",
+      lyricsRuUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/9.%20%D0%93%D0%95%D0%A2%D0%A2%D0%9E%20%D0%92%20%D0%93%D0%9E%D0%9B%D0%9E%D0%92%D0%95.txt"
+    },
+    {
+      id: 10,
+      number: "10",
+      title: "Последний снег",
+      duration: "4:11",
+      audioUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/10%20-%20%D0%A2%D1%91%D0%BC%D0%BD%D1%8B%D0%99%20%D0%A1%D0%98%D0%9B%D0%A3%D0%AD%D0%A2%20-%20%D0%9F%D0%9E%D0%A1%D0%9B%D0%95%D0%94%D0%9D%D0%98%D0%99%20%D0%A1%D0%9D%D0%95%D0%93.mp3",
+      lyricsRuUrl: "https://raw.githubusercontent.com/d0brix/New-Code-Album/main/10.%20%D0%9F%D0%9E%D0%A1%D0%9B%D0%95%D0%94%D0%9D%D0%98%D0%99%20%D0%A1%D0%9D%D0%95%D0%93.txt"
+    }
+  ];
+
+  const trackListEl = document.getElementById("trackList");
+  const audioEl = document.getElementById("audioPlayer");
+  const nowPlayingTitleEl = document.getElementById("nowPlayingTitle");
+  const nowPlayingSubEl = document.getElementById("nowPlayingSub");
+  const lyricsRuEl = document.getElementById("lyricsRu");
+  const lyricsRuSourceEl = document.getElementById("lyricsRuSource");
+
+  let currentTrackId = null;
+
+  function buildTrackList() {
+    tracks.forEach((track) => {
+      const li = document.createElement("li");
+      li.className = "track-item";
+      li.dataset.trackId = track.id;
+
+      const num = document.createElement("span");
+      num.className = "track-number";
+      num.textContent = track.number;
+
+      const meta = document.createElement("div");
+      meta.className = "track-meta";
+
+      const title = document.createElement("div");
+      title.className = "track-title";
+      title.textContent = track.title;
+
+      const info = document.createElement("div");
+      info.className = "track-info-line";
+      info.textContent = "Тёмный Силуэт";
+
+      meta.appendChild(title);
+      meta.appendChild(info);
+
+      const dur = document.createElement("span");
+      dur.className = "duration-pill";
+      dur.textContent = track.duration;
+
+      li.appendChild(num);
+      li.appendChild(meta);
+      li.appendChild(dur);
+
+      li.addEventListener("click", () => selectTrack(track.id));
+
+      trackListEl.appendChild(li);
+    });
+  }
+
+  async function loadLyricsRu(track) {
+    if (!track.lyricsRuUrl) {
+      lyricsRuEl.textContent = "Няма .txt източник за този трак.";
+      lyricsRuSourceEl.textContent = "";
+      return;
+    }
+    try {
+      lyricsRuEl.textContent = "Зареждане на текста...";
+      lyricsRuSourceEl.textContent = track.lyricsRuUrl.split("/").slice(-1)[0];
+      const response = await fetch(track.lyricsRuUrl);
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      const text = await response.text();
+      // ако междувременно е сменен тракът – не пипаме
+      if (track.id !== currentTrackId) return;
+      lyricsRuEl.textContent = text;
+    } catch (err) {
+      console.error(err);
+      lyricsRuEl.textContent = "Неуспешно зареждане на руския текст. Провери дали .txt файловете са публични.";
+    }
+  }
+
+  function selectTrack(id) {
+    const track = tracks.find((t) => t.id === id);
+    if (!track) return;
+
+    currentTrackId = id;
+
+    document
+      .querySelectorAll(".track-item")
+      .forEach((el) => el.classList.toggle("active", Number(el.dataset.trackId) === id));
+
+    audioEl.src = track.audioUrl;
+    nowPlayingTitleEl.textContent = track.number + " · " + track.title;
+    nowPlayingSubEl.textContent = "Тёмный Силуэт — Новый код";
+
+    loadLyricsRu(track);
+
+    audioEl.play().catch(() => {
+      // autoplay може да бъде блокиран – просто игнорираме грешката
+    });
+  }
+
+  function handleEnded() {
+    if (currentTrackId == null) return;
+    const idx = tracks.findIndex(t => t.id === currentTrackId);
+    if (idx === -1) return;
+    const nextIdx = idx + 1;
+    if (nextIdx < tracks.length) {
+      selectTrack(tracks[nextIdx].id);
+    }
+    // ако сме на последния трак – не правим нищо, албумът свършва
+  }
+
+  function init() {
+    buildTrackList();
+    audioEl.addEventListener("ended", handleEnded);
+    if (tracks.length > 0) {
+      selectTrack(tracks[0].id);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+</script>
+</body>
+</html>
